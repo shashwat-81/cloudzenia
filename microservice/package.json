@@ -1,0 +1,19 @@
+{
+  "name": "cloudzenia-microservice",
+  "version": "1.0.0",
+  "description": "CloudZenia microservice - responds with 'Hello from Microservice'",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js"
+  },
+  "keywords": [
+    "microservice",
+    "cloudzenia"
+  ],
+  "author": "CloudZenia",
+  "license": "MIT",
+  "engines": {
+    "node": "18.x"
+  }
+}

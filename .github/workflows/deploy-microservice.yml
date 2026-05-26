@@ -1,0 +1,93 @@
+name: Build and deploy microservice to ECS
+
+on:
+  push:
+    paths:
+      - "microservice/**"
+      - ".github/workflows/deploy-microservice.yml"
+    branches:
+      - main
+  workflow_dispatch: {}
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: cloudzenia/microservice
+  ECS_CLUSTER: cloudzenia-cluster
+  ECS_SERVICE: cloudzenia-microservice-service
+  ECS_TASK_FAMILY: cloudzenia-microservice
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Use classic access keys via GitHub Secrets:
+      # - AWS_ACCESS_KEY_ID
+      # - AWS_SECRET_ACCESS_KEY
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image
+        id: build
+        working-directory: microservice
+        run: |
+          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          docker build -t "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
+          echo "image_uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
+
+      - name: Create new task definition revision
+        id: taskdef
+        run: |
+          set -euo pipefail
+          aws ecs describe-task-definition \
+            --task-definition "${{ env.ECS_TASK_FAMILY }}" \
+            --query taskDefinition > taskdef.json
+
+          # Update container image and register a new revision
+          jq --arg IMAGE "${{ steps.build.outputs.image_uri }}" '
+            .containerDefinitions |= map(
+              if .name == "microservice" then .image = $IMAGE else . end
+            )
+            | {
+              family,
+              taskRoleArn,
+              executionRoleArn,
+              networkMode,
+              containerDefinitions,
+              requiresCompatibilities,
+              cpu,
+              memory,
+              volumes,
+              placementConstraints
+            }
+          ' taskdef.json > register.json
+
+          REVISION_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://register.json \
+            --query taskDefinition.taskDefinitionArn \
+            --output text)
+
+          echo "task_definition_arn=$REVISION_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --service "${{ env.ECS_SERVICE }}" \
+            --task-definition "${{ steps.taskdef.outputs.task_definition_arn }}" \
+            --force-new-deployment
+

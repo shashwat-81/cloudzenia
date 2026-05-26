@@ -1,0 +1,15 @@
+aws_region   = "us-east-1"
+environment  = "prod"
+project_name = "cloudzenia"
+domain_name  = "your-domain.example.com"
+
+# Dedicated WordPress DB user (stored in Secrets Manager; not auto-rotated)
+rds_password = "YourSecurePassword123!@#"
+
+# Optional: Route53 hosted zone for ACM DNS validation + ALB alias records
+# route53_zone_id = "Z1234567890ABC"
+
+# Point DNS at the ALB after apply:
+#   wordpress.<domain_name>   -> ALB DNS name (see alb_dns_name output)
+#   microservice.<domain_name>  -> ALB DNS name
+# Add ACM validation CNAMEs from acm_validation_records output before HTTPS is ready.
