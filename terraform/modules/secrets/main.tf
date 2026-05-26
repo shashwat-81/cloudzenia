@@ -3,6 +3,12 @@ variable "project_name" {
   type        = string
 }
 
+variable "recovery_window_in_days" {
+  description = "Secrets Manager recovery window (0 = immediate delete, allows fast recreate)"
+  type        = number
+  default     = 0
+}
+
 variable "rds_endpoint" {
   description = "RDS endpoint"
   type        = string
@@ -41,7 +47,8 @@ output "secret_name" {
 resource "aws_secretsmanager_secret" "rds_credentials" {
   name                    = "${var.project_name}/rds/wordpress"
   description             = "WordPress RDS credentials (static, non-rotating)"
-  recovery_window_in_days = 7
+  # Use 0 in dev so destroy+re-apply is immediate; set 7+ in production.
+  recovery_window_in_days = var.recovery_window_in_days
 
   tags = {
     Name = "${var.project_name}-rds-credentials"

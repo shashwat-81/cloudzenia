@@ -80,33 +80,15 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Self-signed cert for ALB HTTPS (DuckDNS ACM DNS validation often fails)
-resource "tls_private_key" "self_signed" {
-  algorithm = "RSA"
-  rsa_bits  = 2048
-}
+# PEM from certs/ (python modules/ec2_alb/certs/gen_cert.py) — SANs match DuckDNS ALB hostnames
+resource "aws_acm_certificate" "self_signed" {
+  private_key       = file("${path.module}/certs/selfsigned.key")
+  certificate_body  = file("${path.module}/certs/selfsigned.crt")
+  certificate_chain = file("${path.module}/certs/selfsigned.crt")
 
-resource "tls_self_signed_cert" "self_signed" {
-  private_key_pem = tls_private_key.self_signed.private_key_pem
-
-  subject {
-    common_name  = var.domain_name
-    organization = var.project_name
+  tags = {
+    Name = "${var.project_name}-ec2-alb-self-signed"
   }
-
-  validity_period_hours = 8760
-
-  allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "server_auth",
-  ]
-}
-
-resource "aws_iam_server_certificate" "self_signed" {
-  name_prefix      = "${var.project_name}-ec2-alb-self-signed-"
-  certificate_body = tls_self_signed_cert.self_signed.cert_pem
-  private_key      = tls_private_key.self_signed.private_key_pem
 
   lifecycle {
     create_before_destroy = true
@@ -168,7 +150,7 @@ resource "aws_lb_listener" "https" {
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = aws_iam_server_certificate.self_signed.arn
+  certificate_arn   = aws_acm_certificate.self_signed.arn
 
   default_action {
     type             = "forward"
@@ -210,5 +192,9 @@ resource "aws_lb_listener_rule" "docker" {
 
 output "alb_dns_name" {
   value = aws_lb.main.dns_name
+}
+
+output "alb_security_group_id" {
+  value = aws_security_group.alb.id
 }
 

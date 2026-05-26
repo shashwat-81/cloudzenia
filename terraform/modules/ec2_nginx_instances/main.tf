@@ -8,11 +8,14 @@ variable "environment" {
   type        = string
 }
 
-# NOTE: To make Let’s Encrypt HTTP-01 work, the instances must be reachable on port 80.
-# Your current VPC "private" route tables use NAT only, which blocks inbound traffic.
-variable "public_subnet_ids" {
-  description = "Public subnet IDs to place instances (needed for HTTP-01 validation)"
+variable "private_subnet_ids" {
+  description = "Private subnet IDs for EC2 (EIP provides inbound reachability for Let's Encrypt HTTP-01)"
   type        = list(string)
+}
+
+variable "alb_security_group_id" {
+  description = "ALB security group ID (only allow inbound from ALB)"
+  type        = string
 }
 
 variable "vpc_id" {
@@ -79,12 +82,6 @@ variable "key_name" {
   default     = null
 }
 
-variable "cloudwatch_log_group_name" {
-  description = "CloudWatch Logs group name for NGINX access logs"
-  type        = string
-  default     = "/ec2/nginx/access"
-}
-
 data "aws_ami" "ubuntu" {
   most_recent = true
   owners      = ["099720109477"] # Canonical
@@ -101,8 +98,8 @@ data "aws_ami" "ubuntu" {
 }
 
 locals {
-  subnet_1 = element(var.public_subnet_ids, 0)
-  subnet_2 = element(var.public_subnet_ids, 1)
+  subnet_1 = element(var.private_subnet_ids, 0)
+  subnet_2 = element(var.private_subnet_ids, 1)
 
   instance1_host_instance  = "${var.ec2_instance1_subdomain}.${var.domain_name}"
   instance1_host_docker    = "${var.ec2_docker1_subdomain}.${var.domain_name}"
@@ -132,19 +129,11 @@ resource "aws_security_group" "ec2" {
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "HTTP for NGINX + certbot challenge"
+    description = "HTTP from ALB only"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTPS for instance subdomains"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    security_groups = [var.alb_security_group_id]
   }
 
   egress {
@@ -161,15 +150,6 @@ resource "aws_eip" "this" {
 
   tags = {
     Name = "${var.project_name}-${each.key}-eip"
-  }
-}
-
-resource "aws_cloudwatch_log_group" "nginx_access" {
-  name              = var.cloudwatch_log_group_name
-  retention_in_days = 7
-
-  tags = {
-    Name = "${var.project_name}-nginx-access-logs"
   }
 }
 
@@ -193,6 +173,11 @@ resource "aws_iam_role" "ec2_cloudwatch" {
 resource "aws_iam_role_policy_attachment" "cw_agent" {
   role       = aws_iam_role.ec2_cloudwatch.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_core" {
+  role       = aws_iam_role.ec2_cloudwatch.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "ec2_cloudwatch" {
@@ -222,7 +207,7 @@ resource "aws_instance" "this" {
 
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y
-    apt-get install -y nginx docker.io certbot python3-certbot-nginx amazon-cloudwatch-agent
+    apt-get install -y nginx docker.io
 
     systemctl enable --now nginx
     systemctl enable --now docker
@@ -309,45 +294,7 @@ resource "aws_instance" "this" {
     nginx -t
     systemctl reload nginx
 
-    # CloudWatch Agent: RAM utilization + NGINX access logs
-    cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWCFG
-    {
-      "metrics": {
-        "append_dimensions": {
-          "InstanceId": "$${aws:InstanceId}"
-        },
-        "metrics_collected": {
-          "mem": {
-            "measurement": ["mem_used_percent"],
-            "metrics_collection_interval": 60
-          }
-        }
-      },
-      "logs": {
-        "logs_collected": {
-          "files": {
-            "collect_list": [
-              {
-                "file_path": "/var/log/nginx/access.log",
-                "log_group_name": "${var.cloudwatch_log_group_name}",
-                "log_stream_name": "{instance_id}/nginx-access",
-                "timezone": "UTC"
-              }
-            ]
-          }
-        }
-      }
-    }
-    CWCFG
-
-    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop || true
-    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
-
-    # Get HTTPS cert only for the direct subdomains on this instance.
-    certbot --nginx --non-interactive --agree-tos -m "${var.certbot_email}" \
-      --redirect \
-      -d "${each.value.host_instance}" \
-      -d "${each.value.host_docker}"
+    # ALB-only access: instances stay in private subnets and are not accessed directly over the internet.
   EOF
 
   tags = {
@@ -370,7 +317,7 @@ output "eip_public_ips" {
   value = { for k, v in aws_eip.this : k => v.public_ip }
 }
 
-output "nginx_access_log_group" {
-  value = aws_cloudwatch_log_group.nginx_access.name
+output "iam_instance_profile_name" {
+  value = aws_iam_instance_profile.ec2_cloudwatch.name
 }
 

@@ -1,0 +1,13 @@
+aws_region   = "us-east-1"
+environment  = "prod"
+project_name = "cloudzenia"
+domain_name  = "your-domain.example.com"
+
+# WordPress DB user (stored in Secrets Manager; not auto-rotated)
+rds_password = "YourSecurePassword123!@#"
+
+# Set false on first-ever deploy; true if ECR repo already exists in your account
+use_existing_ecr_repository = true
+
+# Optional Route53 zone for ACM DNS validation
+# route53_zone_id = "Z1234567890ABC"

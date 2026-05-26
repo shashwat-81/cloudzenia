@@ -110,41 +110,22 @@ resource "aws_lb_listener" "http" {
 }
 
 locals {
-  dns_names = [
-    var.domain_name,
-    "${var.wordpress_subdomain}.${var.domain_name}",
-    "${var.microservice_subdomain}.${var.domain_name}",
-  ]
+  wordpress_fqdn    = "${var.wordpress_subdomain}.${var.domain_name}"
+  microservice_fqdn = "${var.microservice_subdomain}.${var.domain_name}"
+  dns_names         = [local.wordpress_fqdn, local.microservice_fqdn]
 }
 
-# Free/DuckDNS mode: self-signed cert uploaded to IAM (encrypted HTTPS, but browsers will warn)
-resource "tls_private_key" "self_signed" {
-  algorithm = "RSA"
-  rsa_bits  = 2048
-}
+# PEM from certs/ (run: python modules/alb/certs/gen_cert.py) — fixes ACM "valid in the future"
+resource "aws_acm_certificate" "self_signed" {
+  count = var.enable_acm_dns_validation ? 0 : 1
 
-resource "tls_self_signed_cert" "self_signed" {
-  private_key_pem = tls_private_key.self_signed.private_key_pem
+  private_key       = file("${path.module}/certs/selfsigned.key")
+  certificate_body  = file("${path.module}/certs/selfsigned.crt")
+  certificate_chain = file("${path.module}/certs/selfsigned.crt")
 
-  subject {
-    common_name  = var.domain_name
-    organization = var.project_name
+  tags = {
+    Name = "${var.project_name}-self-signed"
   }
-
-  dns_names             = local.dns_names
-  validity_period_hours = 8760
-
-  allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "server_auth",
-  ]
-}
-
-resource "aws_iam_server_certificate" "self_signed" {
-  name_prefix      = "${var.project_name}-self-signed-"
-  certificate_body = tls_self_signed_cert.self_signed.cert_pem
-  private_key      = tls_private_key.self_signed.private_key_pem
 
   lifecycle {
     create_before_destroy = true
@@ -202,7 +183,7 @@ resource "aws_acm_certificate_validation" "main" {
 }
 
 locals {
-  listener_certificate_arn = var.enable_acm_dns_validation ? aws_acm_certificate_validation.main[0].certificate_arn : aws_iam_server_certificate.self_signed.arn
+  listener_certificate_arn = var.enable_acm_dns_validation ? aws_acm_certificate_validation.main[0].certificate_arn : aws_acm_certificate.self_signed[0].arn
 }
 
 resource "aws_lb_listener" "https" {

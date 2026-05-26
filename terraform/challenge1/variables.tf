@@ -21,16 +21,22 @@ variable "domain_name" {
   type        = string
 }
 
+variable "use_existing_ecr_repository" {
+  description = "Set true if ECR repo cloudzenia/microservice already exists (re-apply after destroy)"
+  type        = bool
+  default     = true
+}
+
 variable "wordpress_subdomain" {
-  description = "WordPress subdomain"
+  description = "WordPress DuckDNS prefix (wordpress-clodzenia.duckdns.org)"
   type        = string
-  default     = "wordpress"
+  default     = "wordpress-clodzenia"
 }
 
 variable "microservice_subdomain" {
-  description = "Microservice subdomain"
+  description = "Microservice DuckDNS prefix (microservice-clodzenia.duckdns.org)"
   type        = string
-  default     = "microservice"
+  default     = "microservice-clodzenia"
 }
 
 variable "route53_zone_id" {

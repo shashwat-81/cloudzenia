@@ -52,8 +52,9 @@ module "iam" {
 module "ecr" {
   source = "../modules/ecr"
 
-  project_name      = var.project_name
-  repository_name   = "microservice"
+  project_name            = var.project_name
+  repository_name         = "microservice"
+  use_existing_repository = var.use_existing_ecr_repository
 }
 
 module "ecs" {
@@ -72,7 +73,7 @@ module "ecs" {
   wordpress_image_url         = var.wordpress_image_url
   wordpress_container_port    = var.wordpress_container_port
   microservice_container_port = var.microservice_container_port
-  microservice_image_url      = module.ecr.repository_url
+  microservice_image_url      = "${module.ecr.repository_url}:latest"
   rds_endpoint                = module.rds.rds_endpoint
   rds_port                    = module.rds.rds_port
   rds_database_name           = var.rds_db_name

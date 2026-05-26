@@ -1,22 +1,33 @@
+output "ec2_instance_ids" {
+  description = "EC2 instance IDs (used by Challenge 3 remote state)"
+  value       = module.ec2_nginx_instances.instance_ids
+}
+
 output "ec2_instance_eips" {
-  description = "Elastic IPs for ec2-instance* and ec2-docker*"
+  description = "Elastic IPs — point matching DuckDNS domains here"
   value       = module.ec2_nginx_instances.eip_public_ips
 }
 
 output "ec2_alb_dns_name" {
-  description = "ALB DNS name for ec2-alb-* hostnames"
+  description = "EC2 ALB DNS — point ec2-alb-*-clodzenia DuckDNS domains here (use ALB IP from nslookup)"
   value       = module.ec2_alb.alb_dns_name
 }
 
 output "ec2_instance_urls" {
-  description = "HTTPS URLs to access instance subdomains (certificate may take time)"
+  description = "URLs (DuckDNS). For private-subnet mode, use ALB URLs only."
   value = {
-    ec2_instance1 = "https://${var.ec2_instance1_subdomain}.${var.domain_name}"
-    ec2_docker1   = "https://${var.ec2_docker1_subdomain}.${var.domain_name}"
-    ec2_instance2 = "https://${var.ec2_instance2_subdomain}.${var.domain_name}"
-    ec2_docker2   = "https://${var.ec2_docker2_subdomain}.${var.domain_name}"
     ec2_alb_instance = "https://${var.ec2_alb_instance_subdomain}.${var.domain_name}"
     ec2_alb_docker   = "https://${var.ec2_alb_docker_subdomain}.${var.domain_name}"
   }
 }
 
+output "duckdns_setup" {
+  description = "ALB-only: create these DuckDNS domains and set them to an ALB IPv4 from nslookup."
+  value = {
+    alb_dns       = module.ec2_alb.alb_dns_name
+    domains = {
+      (var.ec2_alb_instance_subdomain) = "→ ALB IP (nslookup alb_dns)"
+      (var.ec2_alb_docker_subdomain)   = "→ ALB IP (same)"
+    }
+  }
+}

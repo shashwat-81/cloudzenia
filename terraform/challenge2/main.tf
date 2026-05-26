@@ -10,10 +10,11 @@ module "vpc" {
 module "ec2_nginx_instances" {
   source = "../modules/ec2_nginx_instances"
 
-  project_name    = var.project_name
-  environment     = var.environment
-  vpc_id          = module.vpc.vpc_id
-  public_subnet_ids = module.vpc.public_subnet_ids
+  project_name       = var.project_name
+  environment        = var.environment
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+  alb_security_group_id = module.ec2_alb.alb_security_group_id
 
   domain_name = var.domain_name
   certbot_email = var.certbot_email

@@ -1,0 +1,14 @@
+aws_region   = "us-east-1"
+environment  = "prod"
+project_name = "cloudzenia"
+
+domain_name = "duckdns.org"
+
+ec2_instance1_subdomain    = "ec2-instance1-clodzenia"
+ec2_docker1_subdomain      = "ec2-docker1-clodzenia"
+ec2_instance2_subdomain    = "ec2-instance2-clodzenia"
+ec2_docker2_subdomain      = "ec2-docker2-clodzenia"
+ec2_alb_instance_subdomain = "ec2-alb-instance-clodzenia"
+ec2_alb_docker_subdomain   = "ec2-alb-docker-clodzenia"
+
+certbot_email = "you@example.com"

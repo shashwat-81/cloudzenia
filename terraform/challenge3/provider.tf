@@ -5,14 +5,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.0"
-    }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
-    }
   }
 }
 
@@ -23,18 +15,8 @@ provider "aws" {
     tags = {
       Environment = var.environment
       Project     = var.project_name
-      Challenge   = "2"
+      Challenge   = "3"
       ManagedBy   = "Terraform"
     }
   }
-
-  ignore_tags {
-    keys = ["CreatedAt"]
-  }
 }
-
-provider "aws" {
-  alias  = "acm_provider"
-  region = "us-east-1"
-}
-

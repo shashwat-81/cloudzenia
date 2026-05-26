@@ -9,8 +9,25 @@ variable "repository_name" {
   default     = "microservice"
 }
 
+variable "use_existing_repository" {
+  description = "Set true if the ECR repo already exists in AWS (e.g. after a prior apply/destroy)"
+  type        = bool
+  default     = false
+}
+
+locals {
+  repository_full_name = "${var.project_name}/${var.repository_name}"
+}
+
+data "aws_ecr_repository" "existing" {
+  count = var.use_existing_repository ? 1 : 0
+  name  = local.repository_full_name
+}
+
 resource "aws_ecr_repository" "main" {
-  name                 = "${var.project_name}/${var.repository_name}"
+  count = var.use_existing_repository ? 0 : 1
+
+  name                 = local.repository_full_name
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -23,6 +40,9 @@ resource "aws_ecr_repository" "main" {
 }
 
 output "repository_url" {
-  value = aws_ecr_repository.main.repository_url
+  value = var.use_existing_repository ? data.aws_ecr_repository.existing[0].repository_url : aws_ecr_repository.main[0].repository_url
 }
 
+output "repository_arn" {
+  value = var.use_existing_repository ? data.aws_ecr_repository.existing[0].arn : aws_ecr_repository.main[0].arn
+}

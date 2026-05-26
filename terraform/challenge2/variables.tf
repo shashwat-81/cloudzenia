@@ -17,8 +17,9 @@ variable "project_name" {
 }
 
 variable "domain_name" {
-  description = "Main domain name (e.g., clodzenia.duckdns.org)"
+  description = "DNS suffix (e.g. duckdns.org). FQDN = <subdomain>.<domain_name>"
   type        = string
+  default     = "duckdns.org"
 }
 
 variable "vpc_cidr" {
@@ -52,38 +53,38 @@ variable "certbot_email" {
 }
 
 variable "ec2_instance1_subdomain" {
-  description = "ec2-instance1 subdomain"
+  description = "DuckDNS prefix for instance1 (ec2-instance1-clodzenia.duckdns.org)"
   type        = string
-  default     = "ec2-instance1"
+  default     = "ec2-instance1-clodzenia"
 }
 
 variable "ec2_docker1_subdomain" {
-  description = "ec2-docker1 subdomain"
+  description = "DuckDNS prefix for docker1"
   type        = string
-  default     = "ec2-docker1"
+  default     = "ec2-docker1-clodzenia"
 }
 
 variable "ec2_instance2_subdomain" {
-  description = "ec2-instance2 subdomain"
+  description = "DuckDNS prefix for instance2"
   type        = string
-  default     = "ec2-instance2"
+  default     = "ec2-instance2-clodzenia"
 }
 
 variable "ec2_docker2_subdomain" {
-  description = "ec2-docker2 subdomain"
+  description = "DuckDNS prefix for docker2"
   type        = string
-  default     = "ec2-docker2"
+  default     = "ec2-docker2-clodzenia"
 }
 
 variable "ec2_alb_instance_subdomain" {
-  description = "ec2-alb-instance subdomain"
+  description = "DuckDNS prefix for ALB instance hostname"
   type        = string
-  default     = "ec2-alb-instance"
+  default     = "ec2-alb-instance-clodzenia"
 }
 
 variable "ec2_alb_docker_subdomain" {
-  description = "ec2-alb-docker subdomain"
+  description = "DuckDNS prefix for ALB docker hostname"
   type        = string
-  default     = "ec2-alb-docker"
+  default     = "ec2-alb-docker-clodzenia"
 }
 
