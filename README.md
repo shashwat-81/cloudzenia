@@ -158,8 +158,8 @@ IAM user needs ECR push and ECS `RegisterTaskDefinition` / `UpdateService` on th
 | 1 | [`terraform/challenge1/README.md`](terraform/challenge1/README.md) |
 | 2 | [`terraform/challenge2/README.md`](terraform/challenge2/README.md) |
 | 3 | [`terraform/challenge3/README.md`](terraform/challenge3/README.md) |
-| 4 | [`challenge4/README.md`](challenge4/README.md) |
-| 5 | [`challenge5/README.md`](terraform/challenge5//README.md) |
+| 4 | [`terraform/challenge4/README.md`](terraform/challenge4/README.md) |
+| 5 | [`terraform/challenge5/README.md`](terraform/challenge5//README.md)|
 
 ## Do not apply from `terraform/` root
 
