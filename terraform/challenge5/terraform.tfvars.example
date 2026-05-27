@@ -1,0 +1,14 @@
+aws_region   = "us-east-1"
+environment  = "prod"
+project_name = "cloudzenia"
+domain_name  = "duckdns.org"
+
+# FQDN: static-s3-clodzenia.duckdns.org (flat DuckDNS hostname)
+static_subdomain = "static-s3-clodzenia"
+
+# false = apply works immediately; use cloudfront_domain_name output URL
+# true  = requires ACM DNS validation CNAMEs (not supported on DuckDNS A-record-only UI)
+enable_custom_domain = false
+
+enable_geo_restriction   = true
+geo_restricted_countries = ["IN", "IR", "KP", "SY"]

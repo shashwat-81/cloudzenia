@@ -83,6 +83,8 @@ module "ecs" {
   autoscaling_target_cpu      = var.autoscaling_target_cpu
   autoscaling_target_memory   = var.autoscaling_target_memory
   vpc_id                      = module.vpc.vpc_id
+  wordpress_subdomain         = var.wordpress_subdomain
+  wordpress_domain            = var.domain_name
   https_listener_arn          = module.alb.https_listener_arn
 }
 

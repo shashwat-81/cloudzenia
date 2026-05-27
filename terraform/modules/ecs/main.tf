@@ -117,6 +117,18 @@ variable "https_listener_arn" {
   type        = string
 }
 
+variable "wordpress_subdomain" {
+  description = "WordPress subdomain for WP_HOME and WP_SITEURL"
+  type        = string
+  default     = ""
+}
+
+variable "wordpress_domain" {
+  description = "WordPress domain name for WP_HOME and WP_SITEURL"
+  type        = string
+  default     = ""
+}
+
 output "ecs_cluster_name" {
   value = aws_ecs_cluster.main.name
 }
@@ -214,6 +226,14 @@ resource "aws_ecs_task_definition" "wordpress" {
         {
           name  = "WORDPRESS_DB_PORT"
           value = tostring(var.rds_port)
+        },
+        {
+          name  = "WORDPRESS_WP_HOME"
+          value = var.wordpress_subdomain != "" && var.wordpress_domain != "" ? "https://${var.wordpress_subdomain}.${var.wordpress_domain}" : "http://localhost"
+        },
+        {
+          name  = "WORDPRESS_WP_SITEURL"
+          value = var.wordpress_subdomain != "" && var.wordpress_domain != "" ? "https://${var.wordpress_subdomain}.${var.wordpress_domain}" : "http://localhost"
         }
       ]
       secrets = [

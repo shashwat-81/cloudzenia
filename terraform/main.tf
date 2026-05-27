@@ -4,5 +4,8 @@
 #   terraform/challenge1  — ECS, ALB, RDS, Secrets Manager, ECR
 #   terraform/challenge2  — EC2, NGINX, Docker, EC2 ALB
 #   terraform/challenge3  — CloudWatch metrics & NGINX logs (after challenge2)
+#   terraform/challenge5  — S3 static site + CloudFront + geo restriction (optional)
 #
 # Shared modules live in terraform/modules/
+#
+# Repo docs: challenge4/README.md, challenge5/README.md
